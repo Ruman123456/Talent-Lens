@@ -1,0 +1,7 @@
+Alex Rivera
+alex.rivera@example.com
+Target: AI/ML Engineer
+Skills: Python, PyTorch, FastAPI, Scikit-learn, Docker, PostgreSQL, Machine Learning
+Experience: Machine Learning Engineer Intern at AI Dynamics (6 months).
+Projects: High-throughput neural search engine using ChromaDB and Sentence-Transformers.
+Education: B.Tech in Computer Science

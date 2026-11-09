@@ -1,0 +1,35 @@
+# Comprehensive Technical Backend Engineering Corpus
+# Topics: Distributed Systems, RESTful API Architecture, Database Concurrency, ACID Properties, Caching, and Fault Tolerance.
+
+## 1. RESTful API Architecture & Idempotency
+REST (Representational State Transfer) is an architectural style for designing distributed hypermedia systems. 
+A key principle is statelessness: each request from a client to a server must contain all the information needed to understand and complete the request.
+Idempotency dictates that an operation can be applied multiple times without changing the result beyond the initial application. 
+HTTP methods GET, PUT, and DELETE are idempotent by specification, whereas POST is non-idempotent. 
+In mission-critical backend systems such as payment gateways or order processing, idempotency keys (UUIDv4) stored in a distributed cache like Redis prevent duplicate processing during network timeouts or retry loops.
+
+## 2. Database Concurrency Control & ACID Transactions
+ACID transactions guarantee reliable processing of database operations:
+- Atomicity: Ensures that all operations within a transaction work block succeed or all are rolled back.
+- Consistency: Guarantees that database state transitions preserve defined schema invariants and foreign key constraints.
+- Isolation: Determines the degree to which concurrently executing transactions are visible to one another. Isolation levels include Read Uncommitted, Read Committed, Repeatable Read, and Serializable. Lower isolation levels increase concurrency throughput but risk phenomena such as Dirty Reads, Non-repeatable Reads, and Phantom Reads.
+- Durability: Ensures committed data persists across server restarts via Write-Ahead Logging (WAL).
+Optimistic Concurrency Control (OCC) uses version timestamps without locking rows, making it ideal for read-heavy systems. Pessimistic Locking (SELECT ... FOR UPDATE) secures exclusive row locks for high-conflict financial transactions.
+
+## 3. High-Throughput Database Indexing: B-Trees and Hash Indexes
+A B-Tree (and B+Tree) index organizes keys in balanced hierarchical nodes, providing O(log N) search, insertion, and deletion complexity while facilitating efficient range scans.
+Composite indexes require consideration of the Leftmost Prefix Rule: an index on (tenant_id, created_at, status) can accelerate queries filtering on tenant_id, or tenant_id and created_at, but cannot assist queries filtering solely on status.
+Index bloat, write amplification, and lock contention on leaf pages represent crucial tradeoffs when indexing high-volume write tables.
+
+## 4. Distributed Caching Strategies & Cache Invalidation
+Caching mitigates database load by keeping frequently accessed hot keys in low-latency in-memory stores like Redis or Memcached:
+- Cache-Aside (Lazy Loading): The application queries the cache first. On a cache miss, data is fetched from the primary database and subsequently populated into the cache.
+- Write-Through: Data is written simultaneously to cache and database, ensuring high consistency at the expense of write latency.
+- Write-Back (Write-Behind): The application writes directly to cache; asynchronous background workers batch updates to the persistent database.
+Cache stampede (thundering herd) occurs when a heavily queried key expires, causing thousands of concurrent requests to overwhelm the database. Mitigations include probabilistic early expiration (XFetch algorithm) and distributed mutex locking.
+
+## 5. Asynchronous Concurrency: Event Loops vs Worker Thread Pools
+Modern backend frameworks utilize asynchronous non-blocking I/O (such as Python asyncio, Node.js event loops, or Go goroutines) to multiplex thousands of concurrent network sockets over a single thread.
+Non-blocking sockets notify the OS event demultiplexer (epoll on Linux, IOCP on Windows) when data is readable, freeing CPU cycles from idle waiting.
+However, CPU-bound operations (such as cryptographic hashing, image compression, or matrix transformations) block the event loop and must be delegated to background process pools or Celery/Redis queue workers.
+

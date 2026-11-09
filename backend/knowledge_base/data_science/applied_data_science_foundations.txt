@@ -1,0 +1,26 @@
+# Practical Data Science & Applied Machine Learning Core Concepts
+# Primary references: Feature engineering, cross-validation, model evaluation metrics, and tree ensembles.
+
+## 1. Exploratory Data Analysis & Feature Transformation
+Exploratory Data Analysis (EDA) is the foundational phase of understanding feature distributions, correlations, and outliers.
+Common feature transformations include:
+- Standardization (Z-score scaling): Centers features around mean 0 with unit variance, critical for gradient-based learners and distance-based algorithms like KNN and SVM.
+- Min-Max Normalization: Scales features to a bounded [0, 1] range, sensitive to extreme outliers.
+- One-Hot vs Target Encoding: Categorical features with low cardinality are safely one-hot encoded. High-cardinality features benefit from Target Encoding with smoothing to prevent target leakage.
+- Missing Value Imputation: Simple mean/median imputation assumes Missing Completely At Random (MCAR). Iterative multivariate imputation (e.g., MICE) models relationships between features to impute more accurately.
+
+## 2. Evaluation Metrics: Beyond Raw Accuracy
+In imbalanced classification problems, raw accuracy is deceptive. 
+- Precision: Measures the proportion of positive identifications that were actually correct (TP / (TP + FP)). Critical in spam detection or spam filters where false positives are costly.
+- Recall (Sensitivity): Measures the proportion of actual positives identified correctly (TP / (TP + FN)). Essential in medical diagnosis and fraud detection.
+- F1-Score: Harmonic mean of precision and recall.
+- ROC-AUC: Plots the True Positive Rate against False Positive Rate across all classification probability thresholds.
+- Log-Loss (Cross-Entropy): Quantifies the uncertainty of probabilistic outputs; heavily penalizes confident incorrect predictions.
+
+## 3. Cross-Validation Strategies & Preventing Data Leakage
+Data leakage occurs when information from outside the training dataset is inadvertently used to create the model.
+- K-Fold Cross-Validation: Splits data into K distinct folds, training on K-1 and evaluating on 1.
+- Stratified K-Fold: Preserves the target class distribution percentages in each fold, essential for imbalanced datasets.
+- Time-Series (Rolling-Window) Split: Strictly evaluates models on future unseen temporal partitions without looking ahead.
+Preprocessing transformations (scaling, PCA, imputation) MUST be fit strictly on training folds and only applied to validation folds to prevent data leakage.
+

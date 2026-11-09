@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+frontend/dist/
+build/
+
+# Python cache & virtual environment
+__pycache__/
+backend/**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+
+# Local databases & vector storage
+backend/talentlens.db
+backend/talentlens.db*
+backend/chroma_db/
+chroma_db/
+*.sqlite
+*.db
+
+# Uploaded candidate files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Environment files
+.env
+.env.local
+*.local
+
+# System & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
