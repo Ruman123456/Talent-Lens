@@ -38,11 +38,30 @@ app.add_middleware(
 # Register API Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
-def root():
-    return {
-        "message": "Welcome to TalentLens AI Backend",
-        "docs": "/docs",
-        "health": f"{settings.API_V1_STR}/health"
-    }
+# Serve Frontend Static Build in Production (if present)
+frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
+if os.path.exists(frontend_dist):
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
+
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def serve_frontend_spa(full_path: str):
+        if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path.startswith("openapi.json"):
+            return None
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/")
+    def root():
+        return {
+            "message": "Welcome to TalentLens AI Backend",
+            "docs": "/docs",
+            "health": f"{settings.API_V1_STR}/health"
+        }
 
