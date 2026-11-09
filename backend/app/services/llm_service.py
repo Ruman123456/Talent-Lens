@@ -41,66 +41,123 @@ class DemoMockProvider(LLMProvider):
         
         # 1. Profile Extraction from Resume
         if "extract the candidate's profile" in lower_prompt or "resume parsing" in lower_prompt:
-            # Smart rule-based extraction from prompt text
-            skills = []
+            # Smart rule-based extraction strictly grounded in the provided resume text
+            # Extract resume text section from prompt
+            resume_text = ""
+            if "resume text:" in lower_prompt:
+                resume_text = prompt.split("Resume Text:")[-1].replace("---", "").strip()
+            else:
+                resume_text = prompt
+
+            lines = [l.strip() for l in resume_text.split("\n") if l.strip()]
+            lower_resume = resume_text.lower()
+
             languages = []
             frameworks = []
             databases = []
             cloud = []
             tools = []
 
-            kw_lang = ["python", "javascript", "typescript", "java", "c++", "c#", "go", "rust", "scala", "ruby", "sql"]
+            kw_lang = ["python", "javascript", "typescript", "java", "c++", "c#", "go", "rust", "scala", "ruby", "sql", "r", "kotlin", "swift"]
             kw_frameworks = ["fastapi", "django", "flask", "react", "next.js", "vue", "pytorch", "tensorflow", "keras", "scikit-learn", "pandas", "numpy", "spring boot", "express"]
             kw_db = ["postgresql", "mysql", "mongodb", "sqlite", "redis", "cassandra", "dynamodb", "chromadb", "elasticsearch"]
-            kw_cloud = ["aws", "azure", "gcp", "docker", "kubernetes", "terraform", "ci/cd", "git", "linux"]
+            kw_cloud = ["aws", "azure", "gcp", "docker", "kubernetes", "terraform", "ci/cd", "linux"]
+            kw_tools = ["git", "github", "gitlab", "postman", "vs code", "jira"]
 
             for w in kw_lang:
-                if re.search(r'\b' + re.escape(w) + r'\b', lower_prompt):
+                if re.search(r'\b' + re.escape(w) + r'\b', lower_resume):
                     languages.append(w.title() if len(w) > 3 else w.upper())
             for w in kw_frameworks:
-                if re.search(r'\b' + re.escape(w) + r'\b', lower_prompt):
+                if re.search(r'\b' + re.escape(w) + r'\b', lower_resume):
                     frameworks.append(w.title())
             for w in kw_db:
-                if re.search(r'\b' + re.escape(w) + r'\b', lower_prompt):
+                if re.search(r'\b' + re.escape(w) + r'\b', lower_resume):
                     databases.append(w.title())
             for w in kw_cloud:
-                if re.search(r'\b' + re.escape(w) + r'\b', lower_prompt):
+                if re.search(r'\b' + re.escape(w) + r'\b', lower_resume):
                     cloud.append(w.upper() if len(w) <= 3 else w.title())
+            for w in kw_tools:
+                if re.search(r'\b' + re.escape(w) + r'\b', lower_resume):
+                    tools.append(w.title() if len(w) > 3 else w.upper())
 
-            technical_skills = list(set(languages + frameworks + databases + cloud))
-            if not technical_skills:
-                technical_skills = ["Software Engineering", "Problem Solving", "System Architecture"]
+            technical_skills = list(set(languages + frameworks + databases + cloud + tools))
+
+            # Extract genuine work experience if present in text
+            work_experience = []
+            exp_matches = re.findall(r'(?:experience|work experience|employment)[\s:]*([^\n\r]+(?:\n[^\n\r]+){0,3})', resume_text, re.IGNORECASE)
+            if exp_matches:
+                for match in exp_matches[:2]:
+                    match_clean = match.strip()
+                    if match_clean and len(match_clean) > 5:
+                        work_experience.append({
+                            "role": match_clean.split("\n")[0][:80].strip(),
+                            "company": "From Resume",
+                            "highlights": match_clean[:200].strip()
+                        })
+            else:
+                for line in lines:
+                    if any(term in line.lower() for term in ["intern", "engineer", "developer", "analyst"]) and not any(term in line.lower() for term in ["target", "skills", "education"]):
+                        work_experience.append({
+                            "role": line[:80].strip(),
+                            "company": "From Resume",
+                            "highlights": line[:200].strip()
+                        })
+                        break
+
+            # Extract genuine education if present in text
+            education = []
+            edu_patterns = [r'(?:b\.?tech|b\.?e\.?|bachelor|m\.?tech|master|m\.?s\.?|phd|diploma|degree)[^\n,]*', r'education[\s:]*([^\n\r]+)']
+            for pat in edu_patterns:
+                m = re.search(pat, resume_text, re.IGNORECASE)
+                if m:
+                    deg = m.group(0).strip()
+                    education.append({
+                        "degree": deg[:100],
+                        "institution": "From Resume",
+                        "year": ""
+                    })
+                    break
+
+            # Extract genuine projects if present in text
+            projects = []
+            proj_matches = re.findall(r'(?:projects?|project:)[\s:]*([^\n\r]+(?:\n[^\n\r]+){0,2})', resume_text, re.IGNORECASE)
+            if proj_matches:
+                for p in proj_matches[:2]:
+                    p_clean = p.strip()
+                    if p_clean and len(p_clean) > 5:
+                        projects.append({
+                            "name": p_clean.split("\n")[0][:60].strip(),
+                            "description": p_clean[:200].strip(),
+                            "technologies": [t for t in technical_skills if t.lower() in p_clean.lower()]
+                        })
+
+            # Genuine summary
+            summary = ""
+            if technical_skills:
+                summary = f"Candidate with demonstrated skills in {', '.join(technical_skills[:5])}."
+            elif lines:
+                summary = f"Profile parsed from resume: {lines[0][:100]}."
+            else:
+                summary = "Candidate profile extracted from submitted document."
+
+            domain_exposure = []
+            if frameworks or "python" in lower_resume or "ai" in lower_resume or "machine learning" in lower_resume:
+                domain_exposure.append("Machine Learning & Software Engineering")
+            if databases:
+                domain_exposure.append("Data Systems & Persistence")
 
             return {
                 "technical_skills": technical_skills,
-                "programming_languages": languages or ["Python"],
-                "frameworks_libraries": frameworks or ["FastAPI", "PyTorch"],
-                "databases": databases or ["PostgreSQL"],
-                "cloud_technologies": cloud or ["Docker", "Git"],
-                "tools_platforms": ["Git", "Docker", "VS Code", "Postman"],
-                "projects": [
-                    {
-                        "name": "Production Technical System",
-                        "description": "Architected end-to-end scalable application with persistent data handling and modern API design.",
-                        "technologies": languages[:2] + frameworks[:2]
-                    }
-                ],
-                "work_experience": [
-                    {
-                        "role": "Software / ML Intern",
-                        "company": "Tech Solutions",
-                        "highlights": "Implemented microservices, model pipelines, and optimized query response latencies."
-                    }
-                ],
-                "education": [
-                    {
-                        "degree": "B.Tech in Computer Science / Information Technology",
-                        "institution": "University Institute of Technology",
-                        "year": "2024"
-                    }
-                ],
-                "domain_exposure": ["Machine Learning Systems", "Distributed Backend APIs", "Data Engineering"],
-                "summary": "Demonstrates strong foundational engineering competencies, modern software stack proficiency, and applied system design skills."
+                "programming_languages": languages,
+                "frameworks_libraries": frameworks,
+                "databases": databases,
+                "cloud_technologies": cloud,
+                "tools_platforms": tools,
+                "projects": projects,
+                "work_experience": work_experience,
+                "education": education,
+                "domain_exposure": domain_exposure,
+                "summary": summary
             }
 
         # 2. Context Building & Query Generation
@@ -142,7 +199,94 @@ class DemoMockProvider(LLMProvider):
                 "recommended_difficulty": random.choice(["easy", "medium", "medium", "hard"])
             }
 
-        # 3. Question Generation (single-question path — rarely used; bulk generation in question_generator.py)
+        # 3. Dynamic Question Generation grounded in retrieved chunks & resume
+        if "generate exactly" in lower_prompt and "interview questions" in lower_prompt:
+            # Parse retrieved chunks from the prompt to ensure tight grounding
+            extracted_refs = []
+            # Look for chunks pattern: [Ref X] Source: <name> (p. <page>) [ID: <id>]\nExcerpt: <snippet>
+            chunk_blocks = re.findall(r'\[Ref\s*(\d+)\]\s*Source:\s*([^\n\(]+)\s*(?:\(p\.\s*([^\)]+)\))?\s*\[ID:\s*([^\]]+)\]\s*\nExcerpt:\s*([^\n\r]+(?:\n[^\n\r]+){0,3})', prompt)
+            
+            for m in chunk_blocks:
+                ref_num, src_name, page_no, chunk_id, excerpt = m
+                extracted_refs.append({
+                    "document_name": src_name.strip(),
+                    "page_number": int(page_no) if page_no and page_no.strip().isdigit() else 1,
+                    "chunk_id": chunk_id.strip(),
+                    "snippet": excerpt.strip()[:250]
+                })
+
+            # Extract candidate skills mentioned in prompt
+            skills_match = re.search(r'Candidate Skills:\s*([^\n]+)', prompt)
+            candidate_skills = [s.strip() for s in skills_match.group(1).split(",") if s.strip()] if skills_match else []
+
+            # Extract role name
+            role_match = re.search(r'Target Role:\s*([^\n]+)', prompt)
+            role_title = role_match.group(1).strip() if role_match else "Software & ML Systems"
+
+            generated_questions = []
+            # If retrieved chunks exist, synthesize questions directly from each chunk's content and candidate skills!
+            if extracted_refs:
+                for idx, ref in enumerate(extracted_refs[:6]):
+                    snippet_text = ref["snippet"]
+                    # Extract the first sentence or salient concept from the chunk snippet
+                    first_sent = snippet_text.split(".")[0].strip()
+                    if len(first_sent) > 120:
+                        first_sent = first_sent[:120]
+
+                    skill_tie = candidate_skills[idx % len(candidate_skills)] if candidate_skills else "software engineering"
+                    
+                    q_text = (
+                        f"Based on the principle that '{first_sent}...', how would you design and implement "
+                        f"this in a production system using {skill_tie}? Discuss key architectural tradeoffs and error cases."
+                    )
+                    topic_title = f"{ref['document_name'].split('.')[0]} Applied Mechanics"
+                    
+                    generated_questions.append({
+                        "question_text": q_text,
+                        "topic": topic_title[:40],
+                        "difficulty": "medium" if idx % 2 == 0 else "hard",
+                        "question_type": "scenario_based" if idx % 2 == 0 else "practical",
+                        "resume_relevance": f"Connects candidate's skill in {skill_tie} directly with foundational concepts from {ref['document_name']}.",
+                        "expected_concepts": [
+                            "System design tradeoffs",
+                            f"Applied {skill_tie} architecture",
+                            "Handling edge cases and failure modes",
+                            "Performance and convergence implications"
+                        ],
+                        "evaluation_rubric": [
+                            "Demonstrates clear technical depth and algorithmic rationale",
+                            f"Applies {skill_tie} patterns correctly",
+                            "Explicitly references tradeoffs and validation"
+                        ],
+                        "source_references": [ref]
+                    })
+
+            # If not enough chunks were parsed from prompt, add context-grounded items
+            if len(generated_questions) < 6:
+                diffs = ["easy", "medium", "medium", "hard", "medium", "hard"]
+                types = ["conceptual", "practical", "scenario_based", "problem_solving", "practical", "scenario_based"]
+                for i in range(len(generated_questions), 6):
+                    skill_tie = candidate_skills[i % len(candidate_skills)] if candidate_skills else "Python"
+                    ref = extracted_refs[0] if extracted_refs else {
+                        "document_name": f"{role_title} Corpus",
+                        "page_number": i + 1,
+                        "chunk_id": f"chunk-ref-{i}",
+                        "snippet": f"Core concepts and system patterns for {role_title}."
+                    }
+                    generated_questions.append({
+                        "question_text": f"In {role_title}, how do you evaluate model generalization vs latency tradeoffs when building with {skill_tie}?",
+                        "topic": f"{role_title} System Architecture",
+                        "difficulty": diffs[i],
+                        "question_type": types[i],
+                        "resume_relevance": f"Evaluates production readiness in {skill_tie}.",
+                        "expected_concepts": ["Generalization vs latency", "Production monitoring", "Error analysis"],
+                        "evaluation_rubric": ["Technical reasoning", "System design considerations"],
+                        "source_references": [ref]
+                    })
+
+            return generated_questions
+
+        # 3. Question Generation (single-question path)
         if "generate an interview question" in lower_prompt:
             single_questions = [
                 {

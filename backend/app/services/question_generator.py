@@ -76,7 +76,7 @@ Strictly output a JSON array of question objects matching this schema:
 """
         system_instruction = "You are a senior technical screener. Output only a valid JSON array of questions."
         
-        # In demo mode, or when LLM returns, format safely
+        # Generate questions via LLM provider
         raw_output = provider.generate_json(prompt, system_instruction=system_instruction)
 
         # Normalization if wrapper dict returned
@@ -91,11 +91,36 @@ Strictly output a JSON array of question objects matching this schema:
             if not questions_list and "question_text" in raw_output:
                 questions_list = [raw_output]
 
-        # If fallback is needed (e.g. empty or few questions generated)
+        # Enforce dynamic question generation from retrieved content
         if not questions_list:
-            questions_list = QuestionGenerator._get_fallback_grounded_questions(
-                role_name, extracted_profile, retrieved_chunks, num_questions
-            )
+            if not retrieved_chunks:
+                raise ValueError("No relevant textbook chunks retrieved to generate interview questions. Please ingest course corpus.")
+
+            # Dynamically synthesize questions strictly from the retrieved chunks and candidate profile
+            candidate_skills = extracted_profile.get("technical_skills", [])
+            for idx, chunk in enumerate(retrieved_chunks[:num_questions]):
+                meta = chunk.get("metadata", {})
+                snippet = chunk.get("text", "").replace("\n", " ")[:300].strip()
+                first_sent = snippet.split(".")[0].strip()
+                skill_link = candidate_skills[idx % len(candidate_skills)] if candidate_skills else "software engineering"
+                src_doc = meta.get("source_name", f"{role_name} Textbook")
+                pg = meta.get("page_number", idx + 1)
+                
+                questions_list.append({
+                    "question_text": f"In {src_doc}, the author discusses: '{first_sent}...'. How would you apply this concept using {skill_link} to solve production scale challenges?",
+                    "topic": meta.get("source_name", "Core Principles")[:35],
+                    "difficulty": "medium" if idx % 2 == 0 else "hard",
+                    "question_type": "scenario_based" if idx % 2 == 0 else "practical",
+                    "resume_relevance": f"Synthesizes candidate experience in {skill_link} with retrieved concepts from {src_doc} (p. {pg}).",
+                    "expected_concepts": ["Algorithmic tradeoffs", f"{skill_link} implementation", "Error mitigation"],
+                    "evaluation_rubric": ["Directly addresses the referenced literature", "Provides concrete engineering reasoning"],
+                    "source_references": [{
+                        "document_name": src_doc,
+                        "page_number": pg,
+                        "chunk_id": chunk.get("chunk_id", f"chunk_{idx}"),
+                        "snippet": snippet[:200]
+                    }]
+                })
 
         # Enforce question index and references
         formatted = []

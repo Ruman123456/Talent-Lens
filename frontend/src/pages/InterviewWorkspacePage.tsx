@@ -5,7 +5,8 @@ import {
   ArrowRight, 
   Send, 
   ShieldAlert,
-  RotateCcw
+  RotateCcw,
+  History
 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { InterviewSession, InterviewQuestion } from '../types';
@@ -144,6 +145,15 @@ export const InterviewWorkspacePage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/sessions')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-zinc-200/80 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs font-medium transition-all"
+            title="View Past Sessions"
+          >
+            <History className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Sessions</span>
+          </button>
+
           <div className="text-right">
             <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
               {currentIndex + 1} of {questions.length} Questions

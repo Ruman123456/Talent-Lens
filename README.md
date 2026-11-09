@@ -67,8 +67,7 @@ PGAGI/
 │   └── package.json
 ├── docs/
 │   ├── architecture.md      # Detailed system architecture
-│   ├── rag_pipeline.md      # In-depth RAG design documentation
-│   └── demo_script.md       # Step-by-step video demonstration guide
+│   └── rag_pipeline.md      # In-depth RAG design documentation
 ├── .env.example             # Environment variable template
 └── README.md
 ```
@@ -115,20 +114,40 @@ python backend/scripts/ingest_corpus.py --role data_science
 python backend/scripts/ingest_corpus.py --role backend_engineer
 ```
 
-### Step 3: Run the Backend Server
+### Step 3: Run the Application
+
+#### Option A: Quick Run with Docker
+The easiest way to start both backend and frontend together with persistent Chroma vector store:
 ```bash
-uvicorn backend.app.main:app --reload --port 8000
+docker compose up --build
+```
+Or build and run the Docker container directly:
+```bash
+docker build -t talentlens-ai .
+docker run -p 8000:8000 talentlens-ai
+```
+Visit `http://localhost:8000` to interact with the full application.
+
+#### Option B: Local Development
+**Run Backend:**
+```bash
+python -m uvicorn app.main:app --reload --port 8000 --app-dir backend
 ```
 - API Swagger Documentation: `http://localhost:8000/docs`
 - Health Endpoint: `http://localhost:8000/api/health`
 
-### Step 4: Run the Frontend
+**Run Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 Open `http://localhost:5173` in your browser.
+
+---
+
+## 4. Demo Walkthrough Video
+> 📹 **Walkthrough Recording:** [Watch the TalentLens AI Demonstration](https://youtu.be/XYZ123) *(Replace with your video link or inspect `docs/`)*
 
 ---
 
