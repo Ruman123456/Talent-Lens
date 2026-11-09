@@ -13,7 +13,10 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
+    PORT=8000 \
+    HF_HOME=/app/models_cache \
+    TRANSFORMERS_CACHE=/app/models_cache \
+    TORCH_HOME=/app/models_cache
 
 WORKDIR /app
 
@@ -34,7 +37,7 @@ COPY sample_resume.txt ./
 COPY README.md ./
 
 # Pre-index textbook corpus during build so container starts instantly
-RUN python backend/scripts/ingest_corpus.py
+RUN python backend/scripts/ingest_corpus.py && chmod -R 777 /app/models_cache /app/backend
 
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist

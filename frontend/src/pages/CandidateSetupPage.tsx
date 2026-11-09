@@ -92,7 +92,9 @@ export const CandidateSetupPage: React.FC = () => {
       localStorage.setItem('talentlens_active_session', session.id);
       navigate(`/interview/${session.id}`);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Failed to initialize session.');
+      console.error('Failed to start interview:', err);
+      const detail = err?.response?.data?.detail || err?.message || 'Failed to initialize session. Please try again.';
+      setError(detail);
       setUploading(false);
     }
   };
@@ -335,6 +337,13 @@ export const CandidateSetupPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {error && (
+            <div className="p-4 rounded-lg bg-rose-50/70 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+              <div className="leading-relaxed">{error}</div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pt-6 border-t border-zinc-100 dark:border-zinc-800/80 gap-4">
             <span className="text-xs text-zinc-400 dark:text-zinc-500">

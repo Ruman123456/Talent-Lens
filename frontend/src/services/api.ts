@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'htt
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 60000,
 });
 
 export const apiService = {

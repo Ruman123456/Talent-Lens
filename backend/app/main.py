@@ -26,6 +26,16 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+@app.on_event("startup")
+def on_startup():
+    print("[STARTUP] Pre-warming SentenceTransformers embedding model...")
+    try:
+        from app.services.embedding_service import embedding_service
+        embedding_service._get_model()
+        print("[STARTUP] Embedding model pre-warmed and ready.")
+    except Exception as e:
+        print(f"[STARTUP WARNING] Could not pre-warm embedding model: {e}")
+
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,

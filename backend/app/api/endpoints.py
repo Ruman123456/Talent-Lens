@@ -267,6 +267,10 @@ def start_interview_session(session_in: SessionCreate, db: Session = Depends(get
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to initialize interview session: {str(e)}")
 
     questions = db.query(InterviewQuestion).filter(InterviewQuestion.session_id == session.id).order_by(InterviewQuestion.question_index).all()
     first_q = questions[0] if questions else None
