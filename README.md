@@ -170,6 +170,3 @@ Verified test coverage includes:
 
 ---
 
-## 6. Demonstration Video Script
-See [`docs/demo_script.md`](file:///c:/Users/ruman%20khan/Downloads/PGAGI/docs/demo_script.md) for the structured walkthrough sequence covering setup, RAG question generation, interactive evaluation, and PDF report export.
-
