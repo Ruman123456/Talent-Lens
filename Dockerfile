@@ -33,11 +33,15 @@ COPY docs/ ./docs/
 COPY sample_resume.txt ./
 COPY README.md ./
 
+# Pre-index textbook corpus during build so container starts instantly
+RUN python backend/scripts/ingest_corpus.py
+
 # Copy built frontend from Stage 1
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 
 # Expose port
 EXPOSE 8000
 
-# Start script: run initial corpus indexing (if empty) then start FastAPI uvicorn
-CMD ["sh", "-c", "python backend/scripts/ingest_corpus.py && python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --app-dir backend"]
+# Start script: launch FastAPI uvicorn directly on the port provided by Render
+CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --app-dir backend"]
+

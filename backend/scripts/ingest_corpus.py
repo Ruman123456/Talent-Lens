@@ -82,9 +82,11 @@ def ingest_directory(role_id: str, directory_path: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Ingest role knowledge documents into ChromaDB.")
-    parser.add_argument("--role", required=True, choices=["ai_ml_engineer", "data_science", "backend_engineer"], help="Role ID")
+    parser.add_argument("--role", required=False, default="all", choices=["all", "ai_ml_engineer", "data_science", "backend_engineer"], help="Role ID or 'all'")
     parser.add_argument("--dir", required=False, help="Directory containing PDFs or TXTs (defaults to role folder)")
     args = parser.parse_args()
 
-    target_dir = args.dir or os.path.join(settings.KNOWLEDGE_BASE_DIR, args.role)
-    ingest_directory(args.role, target_dir)
+    roles_to_ingest = ["ai_ml_engineer", "backend_engineer", "data_science"] if args.role == "all" else [args.role]
+    for r in roles_to_ingest:
+        target_dir = args.dir if (args.dir and args.role != "all") else os.path.join(settings.KNOWLEDGE_BASE_DIR, r)
+        ingest_directory(r, target_dir)
